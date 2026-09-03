@@ -1,0 +1,7 @@
+# dsh-model-scheduler bundle patch: one dual-face row.
+# The node half (this package's `main`) owns the automatic peak/off-peak
+# switching; the browser half (`exports["./client"]`) provides the searchable
+# model picker and the schedule configuration panel in the Web GUI.
+- insert:
+    - id: model-scheduler
+      name: dsh-model-scheduler

@@ -1,0 +1,11 @@
+# Dependencies and tooling
+node_modules/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+
+# Scratch
+scratch/
+.tmp/
