@@ -3,6 +3,16 @@
  * zh is the key source; en is checked complete against it.
  */
 
+// The slot registry declares the namespace table empty and expects each
+// dictionary owner to merge its own row in; without this the `locale: NS`
+// register option and `TranslateNS<typeof NS>` do not typecheck.
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    /** Model-scheduler panel, status, and search copy. */
+    'model.scheduler': ModelSchedulerKey
+  }
+}
+
 export const NS = 'model.scheduler'
 
 /** Simplified Chinese dictionary (key source of truth). */
@@ -24,6 +34,7 @@ export const zh = {
   'config.off': '关',
   'config.peakModel': '高峰模型',
   'config.offpeakModel': '空闲模型',
+  'config.models': '时段模型',
   'config.peakWindows': '高峰时段（时区 {timeZone}）',
   'config.peakDays': '高峰日',
   'config.windowN': '时段 {n}',
@@ -47,6 +58,7 @@ export const zh = {
   'search.setOffpeak': '设为空闲模型',
   'search.current': '当前',
   'notice.saved': '已保存，切换将自动生效',
+  'notice.rejected': '设置未生效：{field}（Host 拒绝了这次写入，请重试）',
   'notice.error': '操作失败：{message}',
   'notice.loading': '正在加载模型…',
   'panel.close': '关闭',
@@ -74,6 +86,7 @@ export const en = {
   'config.off': 'Off',
   'config.peakModel': 'Peak model',
   'config.offpeakModel': 'Off-peak model',
+  'config.models': 'Period models',
   'config.peakWindows': 'Peak windows (time zone {timeZone})',
   'config.peakDays': 'Peak days',
   'config.windowN': 'Window {n}',
@@ -97,6 +110,7 @@ export const en = {
   'search.setOffpeak': 'Set as off-peak model',
   'search.current': 'Current',
   'notice.saved': 'Saved — switching applies automatically',
+  'notice.rejected': 'Not applied: {field} (the Host rejected this write — try again)',
   'notice.error': 'Operation failed: {message}',
   'notice.loading': 'Loading models…',
   'panel.close': 'Close',

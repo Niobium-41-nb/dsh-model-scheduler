@@ -4,12 +4,13 @@
  * model picker that assigns a model or uses it for the current session.
  */
 
-import { useEffect, useSyncExternalStore, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { CatalogState, ModelSchedulerInjected } from './contract.ts'
 import { ModelSearchList } from './ModelSearchList.tsx'
 import { NS } from './locales.ts'
 import { activeRoute, periodAt, type ModelSchedulerSettings } from './period.ts'
+import { useSettingsSnapshot } from './use-settings-snapshot.ts'
 
 /** Panel internal navigation. */
 type View = 'main' | 'search'
@@ -40,7 +41,7 @@ export interface ModelSchedulerPanelProps {
 
 /** Render the schedule panel content. */
 export function ModelSchedulerPanel({ injected, t, onClose }: ModelSchedulerPanelProps) {
-  const snapshot = useSyncExternalStore(injected.scope.subscribe, injected.scope.getSnapshot)
+  const snapshot = useSettingsSnapshot(injected.scope)
   const config = snapshot.value ?? EMPTY_CONFIG
   const [now, setNow] = useState(() => new Date())
   const [view, setView] = useState<View>('main')
@@ -68,13 +69,56 @@ export function ModelSchedulerPanel({ injected, t, onClose }: ModelSchedulerPane
   const effective = activeRoute(config, period)
   const periodLabel = period === 'peak' ? t('period.peak') : t('period.offpeak')
 
+  /**
+   * The catalog display name of one configured route, when the loaded catalog
+   * still knows it. The panel stores provider-owned ids, but the user picked a
+   * NAME in the search list — showing ids back is what made a saved choice
+   * look like nothing happened.
+   */
+  const routeName = (route: ModelSchedulerSettings['peakModel']): string | undefined => {
+    if (route?.provider === undefined || route.provider === '' || route?.model === undefined || route.model === '') {
+      return undefined
+    }
+    const group = (catalog.value?.groups ?? []).find(candidate => candidate.id === route.provider)
+    return group?.models.find(candidate => candidate.id === route.model)?.name
+  }
+
+  /** Whether a route carries a usable provider+model pair. */
+  const routeField = (route: ModelSchedulerSettings['peakModel']): string | undefined =>
+    route?.provider === undefined || route.provider === '' || route?.model === undefined || route.model === ''
+      ? undefined
+      : route.model
+
+  /** Whether a field the panel just wrote is actually present in the stored user layer. */
+  const storedMatches = (field: string, value: unknown): boolean => {
+    const user = injected.scope.getSnapshot().user
+    if (typeof user !== 'object' || user === null || Array.isArray(user)) return false
+    return sameValue((user as Record<string, unknown>)[field], value)
+  }
+
+  /** Human name of one writable field, for the rejection copy. */
+  const fieldText = (field: keyof ModelSchedulerSettings): string => {
+    switch (field) {
+      case 'peakModel': return t('config.peakModel')
+      case 'offPeakModel': return t('config.offpeakModel')
+      case 'enabled': return t('config.enabled')
+      case 'peakDays': return t('config.peakDays')
+      case 'peakWindows': return t('config.peakWindows', { timeZone: config.timeZone ?? '' })
+      default: return String(field)
+    }
+  }
+
   /** Write one settings field, surfacing the outcome on the shared notice. */
   const setField = (field: keyof ModelSchedulerSettings, value: unknown): void => {
     setBusy(true)
     void injected.scope.set(String(field), value).then(
       () => {
         setBusy(false)
-        setNotice({ kind: 'saved', text: t('notice.saved') })
+        // `set()` resolves even when the Host refused the write (the scope
+        // reloads its mirror instead of rejecting), so confirm the document.
+        setNotice(storedMatches(String(field), value)
+          ? { kind: 'saved', text: t('notice.saved') }
+          : { kind: 'error', text: t('notice.rejected', { field: fieldText(field) }) })
       },
       (error: unknown) => {
         setBusy(false)
@@ -122,14 +166,10 @@ export function ModelSchedulerPanel({ injected, t, onClose }: ModelSchedulerPane
       { key: 'use', label: t('search.use'), onPick: useNow },
     ]
 
-  /** Route label for one configured slot ('provider / model'), or a pick hint when empty. */
-  const routeLabel = (route: ModelSchedulerSettings['peakModel']): string =>
-    route?.provider === undefined || route?.provider === '' || route?.model === undefined || route?.model === ''
-      ? t('config.pick')
-      : t('config.route', { provider: route.provider, model: route.model })
-
   const windows = config.peakWindows ?? []
   const days = config.peakDays ?? []
+  const peakConfigured = routeField(config.peakModel) !== undefined
+  const offPeakConfigured = routeField(config.offPeakModel) !== undefined
 
   if (view === 'search') {
     const groups = catalog.value?.groups ?? []
@@ -181,11 +221,14 @@ export function ModelSchedulerPanel({ injected, t, onClose }: ModelSchedulerPane
         </div>
         <div className="msd-statusRow">
           {effective !== undefined
-            ? <span>{t('status.effective', { model: routeLabelFrom(effective, t) })}</span>
+            ? <span>{t('status.effective', { model: routeName(effective) ?? routeLabelFrom(effective, t) })}</span>
             : config.enabled === true
               ? <span className="msd-statusDim">{t('status.unconfigured')}</span>
               : <span className="msd-statusDim">{t('status.disabled')}</span>}
         </div>
+        {notice !== null
+          ? <div className={notice.kind === 'error' ? 'msd-notice msd-notice-error' : 'msd-notice msd-notice-saved'}>{notice.text}</div>
+          : null}
       </div>
       <div className="msd-section">
         <span className="msd-sectionTitle">{t('config.enabled')}</span>
@@ -200,18 +243,32 @@ export function ModelSchedulerPanel({ injected, t, onClose }: ModelSchedulerPane
         </label>
       </div>
       <div className="msd-section">
-        <span className="msd-sectionTitle">{t('config.peakModel')}</span>
+        <span className="msd-sectionTitle">{t('config.models')}</span>
         <div className="msd-row">
           <span className="msd-rowLabel">{t('period.peak')}</span>
           <button type="button" className="msd-pick" onClick={() => { openSearch('peak') }}>
-            <span className="msd-pickText">{routeLabel(config.peakModel)}</span>
+            <span className="msd-pickText">
+              <span className={peakConfigured ? 'msd-pickName' : 'msd-pickName msd-pickEmpty'}>
+                {routeName(config.peakModel) ?? routeField(config.peakModel) ?? t('config.pick')}
+              </span>
+              {routeField(config.peakModel) !== undefined
+                ? <span className="msd-pickRoute">{t('config.route', { provider: config.peakModel?.provider ?? '', model: config.peakModel?.model ?? '' })}</span>
+                : null}
+            </span>
             <span className="msd-pickChevron">▾</span>
           </button>
         </div>
         <div className="msd-row">
           <span className="msd-rowLabel">{t('period.offpeak')}</span>
           <button type="button" className="msd-pick" onClick={() => { openSearch('off-peak') }}>
-            <span className="msd-pickText">{routeLabel(config.offPeakModel)}</span>
+            <span className="msd-pickText">
+              <span className={offPeakConfigured ? 'msd-pickName' : 'msd-pickName msd-pickEmpty'}>
+                {routeName(config.offPeakModel) ?? routeField(config.offPeakModel) ?? t('config.pick')}
+              </span>
+              {routeField(config.offPeakModel) !== undefined
+                ? <span className="msd-pickRoute">{t('config.route', { provider: config.offPeakModel?.provider ?? '', model: config.offPeakModel?.model ?? '' })}</span>
+                : null}
+            </span>
             <span className="msd-pickChevron">▾</span>
           </button>
         </div>
@@ -273,16 +330,33 @@ export function ModelSchedulerPanel({ injected, t, onClose }: ModelSchedulerPane
           type="button"
           className="msd-primary"
           disabled={busy || effective === undefined}
-          onClick={() => { setField('applyRequestedAt', Date.now()) }}
+          onClick={() => {
+            // The Host re-applies the current period on every settings write
+            // (`onChange` → forced applyPeriod), so "apply now" re-writes the
+            // effective route for this period. It must be a schema-known field:
+            // an `applyRequestedAt` marker is not in the settings schema, so the
+            // settings domain rejects the write and the button only reports an error.
+            if (effective === undefined) return
+            setField(period === 'peak' ? 'peakModel' : 'offPeakModel', effective)
+          }}
         >
           {t('action.applyNow')}
         </button>
-        {notice !== null ? (
-          <span className={notice.kind === 'error' ? 'msd-fail' : 'msd-statusDim'}>{notice.text}</span>
-        ) : null}
       </div>
     </>
   )
+}
+
+/** Deep value comparison immune to key order (user-layer writes are echoed back). */
+function sameValue(left: unknown, right: unknown): boolean {
+  if (left === right) return true
+  if (typeof left !== 'object' || typeof right !== 'object' || left === null || right === null) return false
+  if (Array.isArray(left) !== Array.isArray(right)) return false
+  const leftKeys = Object.keys(left)
+  const rightKeys = Object.keys(right)
+  if (leftKeys.length !== rightKeys.length) return false
+  return leftKeys.every(key =>
+    sameValue((left as Record<string, unknown>)[key], (right as Record<string, unknown>)[key]))
 }
 
 /** Route label helper shared with the status line (accepts any route-shaped value). */

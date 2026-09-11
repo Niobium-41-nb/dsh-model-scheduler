@@ -4,7 +4,7 @@
  * panel content lives in ModelSchedulerPanel.
  */
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { IconChevronDownOutline14, useAnchoredPosition, useDismissOnOutsidePointer } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -13,6 +13,7 @@ import type { ModelSchedulerInjected } from './contract.ts'
 import { NS } from './locales.ts'
 import { ModelSchedulerPanel } from './ModelSchedulerPanel.tsx'
 import { periodAt } from './period.ts'
+import { useSettingsSnapshot } from './use-settings-snapshot.ts'
 
 /** Full props of the composer model-scheduler trigger. */
 export type ModelSchedulerButtonProps =
@@ -31,7 +32,7 @@ export function ModelSchedulerButton({ t, ...injected }: ModelSchedulerButtonPro
     const timer = setInterval(() => { setNow(new Date()) }, 1_000)
     return () => { clearInterval(timer) }
   }, [])
-  const snapshot = useSyncExternalStore(injected.scope.subscribe, injected.scope.getSnapshot)
+  const snapshot = useSettingsSnapshot(injected.scope)
   const period = periodAt(now, snapshot.value ?? {})
   const periodLabel = period === 'peak' ? t('period.peak') : t('period.offpeak')
 

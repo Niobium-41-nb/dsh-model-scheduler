@@ -56,21 +56,27 @@ export function ModelSearchList({ groups, query, current, actions, t }: ModelSea
       && current.model === row.model.id
     rendered.push(
       <div key={`${row.group.id}/${row.model.id}`} className="msd-model" role="option" aria-selected={active}>
-        <span className="msd-modelName">{row.model.name}</span>
-        {row.model.description !== undefined
-          ? <span className="msd-modelDesc">{row.model.description}</span>
-          : null}
-        {active ? <span className="msd-modelTag">{t('search.current')}</span> : null}
-        {actions.map(action => (
-          <button
-            key={action.key}
-            type="button"
-            className={action.primary === true ? 'msd-primary' : 'msd-pick'}
-            onClick={() => { action.onPick(row) }}
-          >
-            {action.label}
-          </button>
-        ))}
+        <div className="msd-modelHead">
+          <span className="msd-modelName" title={row.model.name}>{row.model.name}</span>
+          {active ? <span className="msd-modelTag">{t('search.current')}</span> : null}
+        </div>
+        <div className="msd-modelFoot">
+          {row.model.description !== undefined
+            ? <span className="msd-modelDesc" title={row.model.description}>{row.model.description}</span>
+            : null}
+          <div className="msd-modelActions">
+            {actions.map(action => (
+              <button
+                key={action.key}
+                type="button"
+                className={action.primary === true ? 'msd-primary' : 'msd-pick'}
+                onClick={() => { action.onPick(row) }}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>,
     )
   }

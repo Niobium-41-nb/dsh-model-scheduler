@@ -1,0 +1,7 @@
+# Verification overlay for the dsh-model-scheduler plugin (host + client face).
+# One absolute-path row: the host Loader imports lib/index.js, and the
+# client-modules scan walks up from that module to package.json, which declares
+# dsh.client + exports["./client"] — so this single row activates both halves.
+- insert:
+    - id: dsh-model-scheduler
+      name: 'file:///<PLUGINS>/dsh-model-scheduler/lib/index.js'

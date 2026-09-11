@@ -13,7 +13,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type { ModelCatalog } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ModelCatalog, SessionId } from '@deepseek-ai/dsh-api-remotes/client'
 import type { ModelSchedulerInjected } from './contract.ts'
 import { en, NS, zh } from './locales.ts'
 import { ModelSchedulerButton } from './ModelSchedulerButton.tsx'
@@ -48,7 +48,9 @@ export function apply(ctx: ClientContext): void {
           return result.value
         }),
         selectModel: (route) => ctx.remote.session.selectModel({
-          sessionId,
+          // The register inject hands the raw id string; the Remote request
+          // carries the branded SessionId.
+          sessionId: sessionId as SessionId,
           provider: route.provider,
           model: route.model,
           ...(route.reasoningEffort === undefined ? {} : { reasoningEffort: route.reasoningEffort }),
