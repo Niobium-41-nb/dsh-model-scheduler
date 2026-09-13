@@ -2,6 +2,10 @@
   "name": "dsh-model-scheduler",
   "version": "0.1.0",
   "description": "Searchable model picker plus automatic peak/off-peak model switching for the DeepSeek Harness Web GUI",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Niobium-41-nb/dsh-model-scheduler.git"
+  },
   "type": "module",
   "main": "lib/index.js",
   "exports": {
