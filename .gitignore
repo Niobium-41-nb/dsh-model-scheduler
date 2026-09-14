@@ -9,3 +9,5 @@ Thumbs.db
 # Scratch
 scratch/
 .tmp/
+# TypeScript incremental build state
+*.tsbuildinfo

@@ -1,0 +1,35 @@
+# Typecheck and the host-side unit tests, on every push.
+#
+# Platform-neutral: this plugin only reads settings and switches the model, so
+# the cheap runner is the right one. `lib/` is committed, which is also what the
+# publish workflow ships — so this check runs against exactly what is published.
+name: check
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm host:test
