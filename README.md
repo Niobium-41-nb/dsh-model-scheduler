@@ -1,5 +1,7 @@
 # dsh-model-scheduler
 
+[![check](https://github.com/Niobium-41-nb/dsh-model-scheduler/actions/workflows/check.yml/badge.svg)](https://github.com/Niobium-41-nb/dsh-model-scheduler/actions/workflows/check.yml) [![npm](https://img.shields.io/npm/v/dsh-model-scheduler)](https://www.npmjs.com/package/dsh-model-scheduler) [![license](https://img.shields.io/github/license/Niobium-41-nb/dsh-model-scheduler)](https://github.com/Niobium-41-nb/dsh-model-scheduler/blob/master/LICENSE)
+
 A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin that adds two things to the Web UI:
 
 1. **A searchable model picker.** The composer's model selector becomes searchable by name/ID — useful when your deployment exposes many models.

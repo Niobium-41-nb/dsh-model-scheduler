@@ -1,5 +1,7 @@
 # dsh-model-scheduler
 
+[![check](https://github.com/Niobium-41-nb/dsh-model-scheduler/actions/workflows/check.yml/badge.svg)](https://github.com/Niobium-41-nb/dsh-model-scheduler/actions/workflows/check.yml) [![npm](https://img.shields.io/npm/v/dsh-model-scheduler)](https://www.npmjs.com/package/dsh-model-scheduler) [![license](https://img.shields.io/github/license/Niobium-41-nb/dsh-model-scheduler)](https://github.com/Niobium-41-nb/dsh-model-scheduler/blob/master/LICENSE)
+
 一个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 插件，为 Web 界面新增两个能力：
 
 1. **可搜索的模型选择器。** 输入框选择模型时可按名称/ID 检索 —— 模型数量很多时尤其有用。
